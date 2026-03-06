@@ -24,7 +24,7 @@ Stack locked before any building began:
 | Vercel | Hosting + serverless | Free tier; auto-deploy from GitHub |
 | Supabase | Database + auth | Free tier; Postgres + auth out of the box |
 | Claude API (claude-sonnet-4-6) | Coaching brain | Best reasoning model for adaptive coaching |
-| Gemini Nano Banana 2 | Asset generation | Google AI Pro + AI Studio free tier (500 img/day) |
+| Gemini Nano Banana 2 | Asset generation | AI Studio API key (free tier, 500 img/day — separate from Google AI Pro subscription) |
 | Loom | Demo video | Required by hackathon submission |
 | GitHub (two repos) | Code + docs | Public; `flowcoach-app` + `flowcoach-docs` |
 
@@ -49,7 +49,7 @@ Stack locked before any building began:
 | Key | Location | Notes |
 |-----|----------|-------|
 | Anthropic API (`flowcoach-hackathon`) | Proton Pass | Verified live; rotated once after accidental exposure |
-| Google AI Studio | Proton Pass (under desertwaveai@gmail.com) | Default project key; free tier, 500 img/day Nano Banana 2 |
+| Google AI Studio | Proton Pass (under desertwaveai@gmail.com) | Default project key; AI Studio API free tier (500 img/day Nano Banana 2); Google AI Pro subscription does not lift this limit |
 
 ### Repos Created
 
