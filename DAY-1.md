@@ -102,29 +102,105 @@ Red Hat does double duty: it asks "what does your gut tell you about this before
 
 ---
 
+## The Auth Migration (s043)
+
+With the architecture redesigned, the session cookie system wasn't going to hold. Anonymous sessions tied to a browser cookie meant no persistence across devices, no user identity, no real profile. We replaced the entire identity layer.
+
+**Supabase email auth end-to-end:**
+- Login/signup page (`/login`) — email + password, Supabase auth
+- `proxy.ts` as the Next.js 16 auth middleware (not `middleware.ts` — that's a Next.js 15 pattern; Next.js 16 broke it silently)
+- `user_id` migrated across all API routes and all Supabase tables — profiles, sessions, goals, messages
+- Server-side auth client (`lib/supabase-server.ts`) — reads the session cookie and authenticates every API call
+- Old landing page replaced with a redirect to `/dashboard`
+
+The `proxy.ts` / `middleware.ts` distinction is a real gotcha. Both files exist in the repo briefly — we created `middleware.ts`, it conflicted, we deleted it and confirmed `proxy.ts` was already correct.
+
+---
+
+## The Learn Mode Rebuild (s043)
+
+Learn mode went from a single chat stream to six independent, cacheable perspectives on a concept.
+
+**Hat tabs — parallel content, not chat modes:**
+Each hat tab generates its own perspective on the topic on demand. Tap a tab → content streams in. Tap away and back → cached, instant. Six independent views of the same concept.
+
+**Per-hat difficulty control:**
+Each hat has its own level: -4 (extremely simple) to +4 (expert). "Make this easier" regenerates that hat's content one step simpler. "Let's go deeper" regenerates it one step more advanced. The learner can run White Hat at expert depth and Green Hat at beginner level simultaneously. This is the Flow channel made tangible.
+
+**Technical decisions:**
+- Cache key: `${hat}:${level}` — regeneration creates a new cache entry, not an overwrite
+- White Hat streams on mount — it's the anchor; learners always land in a factual starting point
+- `remark-gfm` required for table rendering in ReactMarkdown (Tailwind v4 note: `@plugin` directive in CSS, no `tailwind.config.js`)
+- Streaming is the UX — the cursor appearing as content generates is the magic moment; preloading would remove it
+
+**Hat color design:**
+- White: white bg + dark border (semantically correct — "White Hat" should look white)
+- Yellow: yellow tint
+- Black: dark gray
+- Red: red
+- Green: green
+- Blue: blue
+- Active: deep, saturated. Inactive: soft tint. White hat was accidentally rendered black-on-black — fixed.
+
+---
+
+## Profile Mode (s044)
+
+The profile system is built around a single insight: a form captures declared preferences. A conversation surfaces actual cognitive patterns.
+
+**The tier ladder:**
+Profile completeness maps to coaching quality in four explicit tiers:
+- **Basic** — generic coaching, same for everyone
+- **Good** — Claude knows your goal and background; picks the right analogies, calibrates depth
+- **Great** — Claude knows your knowledge gaps and what's blocked you; fills real holes, avoids past traps
+- **Exceptional** — full picture of how you think, learn, and feel; fully adaptive across every mode
+
+The tier ladder is visible on the profile page and on the dashboard — the "what do I get for putting in the effort" question is answered explicitly.
+
+**Seven section conversations:**
+Each section is a focused conversation with its own system prompt:
+1. **Quick Profile** — 5 min, covers all dimensions at lighter depth. The fastest path to Good coaching.
+2. **Your Goal** — excavates the real goal under the stated one
+3. **Your Background** — maps expertise for analogy bridges
+4. **Your Knowledge Map** — "explain it to me" probe to surface what's solid vs. fuzzy
+5. **What's Worked (and What Hasn't)** — learning history; avoids past traps
+6. **How You Like to Learn** — not learning style buckets (debunked); real cognitive preferences
+7. **Your Relationship With This Subject** — emotional context; goes last because earlier conversations build trust
+
+**The three-question opening:**
+Goal sections open with three framings of the same question — pragmatic, identity, and curiosity — and invite the learner to pick the one that resonates:
+1. *What are you working on or building that's making you want to learn right now?*
+2. *What's the bigger version of yourself you're working toward — and what do you need to learn to get there?*
+3. *What keeps pulling at your attention lately? What do you find yourself coming back to?*
+
+**Save & Finish flow:**
+After enough turns, a "Save & Finish" button appears. The system asks Claude to synthesize the conversation into a 4-6 sentence profile block, saves it to `profiles.profile_data` in Supabase, and shows a confirmation screen with the saved summary.
+
+**Profile → system prompt injection:**
+`buildRichProfileBlock()` in `lib/prompts.ts` reads the saved profile sections and injects them into every hat's system prompt. If no profile exists, it falls back to the onboarding fields. The coach gets richer context automatically as the learner completes more sections.
+
+**Dashboard redesign:**
+Profile is now the top card — visually distinct (indigo) from the learning modes below (dark). Completion count and tier tagline update dynamically. "Start here →" becomes "Continue →" once any section is done. The dashboard communicates the intended flow: set up your profile, then start learning.
+
+---
+
 ## Where Day 1 Ends
 
 **Live at `flowcoach-app.vercel.app`:**
-- Full onboarding → goal → sprint flow
-- White Hat coaching, working end-to-end
-- Red and Green Hat prompts written (routing wired, not yet tested in new architecture)
-- Session cookie bug fixed
+- Auth — Supabase email login/signup, persistent user identity across devices
+- Dashboard — Profile featured at top (indigo card, tier-aware), Learn + 3 coming-soon modes below
+- Learn mode — all 6 hat tabs, streaming, per-hat difficulty -4..+4, caching, remark-gfm tables
+- Profile mode — tier ladder (Basic → Good → Great → Exceptional), 7 section conversations, Save & Finish flow, rich profile injected into all coaching modes
+- All hat system prompts (White, Red, Green written; Yellow, Black, Blue routing through White as fallback)
 - Build green
 
-**Designed but not yet built:**
-- Hat tabs (parallel content, cached)
-- Per-hat difficulty regeneration
-- Separate exercise layer
-- Five-mode dashboard
-- Auth (Supabase login/signup)
-- Deep profile mode
-
-**Build sequence for Day 2:**
-1. Auth — Supabase login/signup; persistent user identity
-2. Dashboard — mode cards, navigation, coming-soon stubs
-3. Learn mode rebuild — hat tabs, on-demand generation, difficulty control, exercises
-4. Profile mode — deep profile conversation
-5. Everything else as far as we get
+**Still to build:**
+- Practice mode (conversational retrieval + Feynman; reuses /api/coach)
+- Flashcard + Quiz screens (stubs minimum, live if time)
+- Yellow, Black, Blue hat prompts (currently fallback to White)
+- Exercise layer (scoped as post-hackathon)
+- Demo video
+- Submission post
 
 ---
 
